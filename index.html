@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Notre amour 🩷</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+
+<!-- ============================================================
+  COMPTEUR PARTAGÉ — FIREBASE REALTIME DATABASE
+  
+  ÉTAPES D'INSTALLATION (5 minutes) :
+  
+  1. Va sur https://console.firebase.google.com
+  2. Crée un projet (ex: "notre-amour")
+  3. Dans le projet → "Realtime Database" → "Créer une base de données"
+     → choisis le mode "test" (pour commencer)
+  4. Dans "Paramètres du projet" → "Vos applications" → icône </> (Web)
+  5. Copie les valeurs de firebaseConfig et remplace les 6 lignes ci-dessous
+  
+  C'est tout ! Le compteur sera partagé entre vous deux en temps réel.
+  ============================================================ -->
+
+<!-- Firebase SDK -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { getDatabase, ref, onValue, runTransaction } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+  // ↓↓↓ REMPLACE CES VALEURS PAR CELLES DE TON PROJET FIREBASE ↓↓↓
+  const firebaseConfig = {
+    apiKey:            "REMPLACE_PAR_TON_API_KEY",
+    authDomain:        "REMPLACE_PAR_TON_AUTH_DOMAIN",
+    databaseURL:       "REMPLACE_PAR_TON_DATABASE_URL",
+    projectId:         "REMPLACE_PAR_TON_PROJECT_ID",
+    storageBucket:     "REMPLACE_PAR_TON_STORAGE_BUCKET",
+    messagingSenderId: "REMPLACE_PAR_TON_MESSAGING_SENDER_ID",
+    appId:             "REMPLACE_PAR_TON_APP_ID"
+  };
+  // ↑↑↑ FIN DE LA ZONE À MODIFIER ↑↑↑
+
+  const app = initializeApp(firebaseConfig);
+  const db  = getDatabase(app);
+  const tapsRef = ref(db, 'heart_taps');
+
+  // Expose functions to global scope for the onclick handlers
+  window._fbRunTransaction = (delta) => runTransaction(tapsRef, (current) => (current || 0) + delta);
+  window._fbOnValue = (cb) => onValue(tapsRef, (snap) => cb(snap.val() || 0));
+  window._firebaseReady = true;
+
+  // Signal readiness
+  document.dispatchEvent(new Event('firebase-ready'));
+</script>
+
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --pink-light: #fbeaf0;
+    --pink-mid: #ed93b1;
+    --pink-dark: #d4537e;
+    --pink-deep: #993556;
+    --pink-text: #4b1528;
+    --cream: #fff9f5;
+  }
+
+  html, body {
+    min-height: 100vh;
+    background: var(--cream);
+    font-family: 'DM Sans', sans-serif;
+    color: var(--pink-text);
+    overflow-x: hidden;
+  }
+
+  .bg-hearts {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    overflow: hidden;
+  }
+
+  .heart-float {
+    position: absolute;
+    font-size: 18px;
+    animation: floatUp linear infinite;
+    opacity: 0;
+  }
+
+  @keyframes floatUp {
+    0%   { transform: translateY(110vh) rotate(-15deg); opacity: 0; }
+    8%   { opacity: 0.5; }
+    85%  { opacity: 0.3; }
+    100% { transform: translateY(-10vh) rotate(20deg); opacity: 0; }
+  }
+
+  .page {
+    position: relative;
+    z-index: 1;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 2.5rem 1.5rem;
+    gap: 1.6rem;
+  }
+
+  .big-heart {
+    font-size: 80px;
+    cursor: pointer;
+    user-select: none;
+    transition: transform 0.15s ease;
+    line-height: 1;
+  }
+  .big-heart:hover { transform: scale(1.08); }
+  .big-heart:active { transform: scale(0.9); }
+  .big-heart.beat { animation: heartbeat 0.5s cubic-bezier(0.34,1.56,0.64,1); }
+  @keyframes heartbeat {
+    0%   { transform: scale(1); }
+    30%  { transform: scale(1.35); }
+    60%  { transform: scale(1.1); }
+    80%  { transform: scale(1.25); }
+    100% { transform: scale(1); }
+  }
+
+  .title {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(2.2rem, 6vw, 3.5rem);
+    font-weight: 400;
+    color: var(--pink-dark);
+    text-align: center;
+    line-height: 1.2;
+    transition: opacity 0.3s;
+  }
+
+  .subtitle {
+    font-size: 1rem;
+    font-weight: 300;
+    color: var(--pink-deep);
+    text-align: center;
+    max-width: 340px;
+    line-height: 1.7;
+    opacity: 0.85;
+  }
+
+  .counter-card {
+    background: white;
+    border: 1px solid #f4c0d1;
+    border-radius: 20px;
+    padding: 1.5rem 2.5rem;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    min-width: 240px;
+  }
+
+  .counter-label {
+    font-size: 0.78rem;
+    font-weight: 500;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--pink-mid);
+  }
+
+  .counter-number {
+    font-family: 'Playfair Display', serif;
+    font-size: 3.8rem;
+    font-weight: 500;
+    color: var(--pink-dark);
+    line-height: 1;
+  }
+
+  .counter-sub {
+    font-size: 0.82rem;
+    color: var(--pink-deep);
+    opacity: 0.7;
+    margin-top: 2px;
+  }
+
+  .counter-details {
+    display: flex;
+    gap: 16px;
+    margin-top: 0.75rem;
+    justify-content: center;
+  }
+
+  .counter-detail { text-align: center; }
+
+  .counter-detail-num {
+    font-size: 1.1rem;
+    font-weight: 500;
+    color: var(--pink-dark);
+  }
+
+  .counter-detail-label {
+    font-size: 0.7rem;
+    color: var(--pink-deep);
+    opacity: 0.65;
+    letter-spacing: 0.06em;
+  }
+
+  /* === HEART TAP COUNTER === */
+  .tap-counter-card {
+    background: var(--pink-light);
+    border: 1px solid #f4c0d1;
+    border-radius: 20px;
+    padding: 1rem 2rem;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    min-width: 240px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .tap-counter-label {
+    font-size: 0.72rem;
+    font-weight: 500;
+    letter-spacing: 0.13em;
+    text-transform: uppercase;
+    color: var(--pink-mid);
+  }
+
+  .tap-counter-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .tap-counter-number {
+    font-family: 'Playfair Display', serif;
+    font-size: 2.8rem;
+    font-weight: 500;
+    color: var(--pink-dark);
+    line-height: 1;
+  }
+  .tap-counter-number.bump {
+    animation: numBump 0.3s cubic-bezier(0.34,1.56,0.64,1);
+  }
+  @keyframes numBump {
+    0%   { transform: scale(1); }
+    50%  { transform: scale(1.25); }
+    100% { transform: scale(1); }
+  }
+
+  .tap-heart-icon { font-size: 1.6rem; }
+
+  .tap-sync-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #9FE1CB;
+    position: absolute;
+    top: 10px;
+    right: 12px;
+    box-shadow: 0 0 0 0 rgba(159,225,203,0.6);
+  }
+  .tap-sync-dot.syncing {
+    animation: syncPulse 0.8s ease-out;
+  }
+  .tap-sync-dot.offline { background: #f4c0d1; }
+  @keyframes syncPulse {
+    0%   { box-shadow: 0 0 0 0 rgba(159,225,203,0.7); }
+    70%  { box-shadow: 0 0 0 8px rgba(159,225,203,0); }
+    100% { box-shadow: 0 0 0 0 rgba(159,225,203,0); }
+  }
+
+  .message-box {
+    background: var(--pink-light);
+    border: 1px solid #f4c0d1;
+    border-radius: 16px;
+    padding: 1rem 1.5rem;
+    max-width: 320px;
+    font-size: 0.95rem;
+    font-style: italic;
+    font-family: 'Playfair Display', serif;
+    color: var(--pink-deep);
+    line-height: 1.7;
+    text-align: center;
+    display: none;
+    animation: popIn 0.35s cubic-bezier(0.34,1.56,0.64,1);
+  }
+  .message-box.visible { display: block; }
+  @keyframes popIn {
+    from { transform: scale(0.75); opacity: 0; }
+    to   { transform: scale(1);    opacity: 1; }
+  }
+
+  .buttons {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .btn {
+    padding: 11px 24px;
+    border-radius: 999px;
+    border: 1.5px solid var(--pink-mid);
+    background: transparent;
+    color: var(--pink-deep);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.9rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.2s, transform 0.12s, color 0.2s;
+  }
+  .btn:hover { background: var(--pink-light); transform: translateY(-1px); }
+  .btn:active { transform: scale(0.97); }
+  .btn.primary {
+    background: var(--pink-mid);
+    color: white;
+    border-color: var(--pink-mid);
+  }
+  .btn.primary:hover { background: var(--pink-dark); border-color: var(--pink-dark); }
+
+  .confetti-piece {
+    position: fixed;
+    width: 8px;
+    height: 8px;
+    border-radius: 2px;
+    pointer-events: none;
+    animation: confettiFall linear forwards;
+    z-index: 9999;
+  }
+  @keyframes confettiFall {
+    0%   { transform: translateY(-10px) rotate(0deg);   opacity: 1; }
+    100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
+  }
+
+  .date-since {
+    font-size: 0.75rem;
+    color: var(--pink-mid);
+    letter-spacing: 0.04em;
+    margin-top: 8px;
+  }
+</style>
+</head>
+<body>
+
+<div class="bg-hearts" id="heartsBg"></div>
+
+<div class="page">
+  <div class="big-heart" id="bigHeart" onclick="heartClick()">🩷</div>
+
+  <div class="title" id="titleText">Je t'aime</div>
+  <div class="subtitle">Ton existence a rendu mon coeur Idil-ique💝</div>
+
+  <div class="counter-card">
+    <div class="counter-label">ensemble depuis</div>
+    <div class="counter-number" id="daysCount">0</div>
+    <div class="counter-sub">jours</div>
+    <div class="counter-details">
+      <div class="counter-detail">
+        <div class="counter-detail-num" id="hoursCount">0</div>
+        <div class="counter-detail-label">heures</div>
+      </div>
+      <div class="counter-detail">
+        <div class="counter-detail-num" id="minsCount">0</div>
+        <div class="counter-detail-label">minutes</div>
+      </div>
+      <div class="counter-detail">
+        <div class="counter-detail-num" id="secsCount">0</div>
+        <div class="counter-detail-label">secondes</div>
+      </div>
+    </div>
+    <div class="date-since">depuis le 31 janvier 2026 🩷</div>
+  </div>
+
+  <!-- COMPTEUR DE TAPS PARTAGÉ -->
+  <div class="tap-counter-card">
+    <div class="tap-sync-dot" id="syncDot"></div>
+    <div class="tap-counter-label">nos petits coeurs à nous</div>
+    <div class="tap-counter-row">
+      <span class="tap-heart-icon">🩷</span>
+      <div class="tap-counter-number" id="tapCount">0</div>
+      <span class="tap-heart-icon">🩷</span>
+    </div>
+  </div>
+
+  <div class="message-box" id="msgBox"></div>
+
+  <div class="buttons">
+    <button class="btn primary" onclick="showMessage()">Un petit message 💌</button>
+    <button class="btn" onclick="launchConfetti()">Fête ça ! 🎉</button>
+  </div>
+</div>
+
+<script>
+  const START = new Date('2026-01-31T00:00:00');
+
+  const messages = [
+    "Ma princesseeee👑",
+    "Mon amourrrrrrrrr❤️",
+    "Ma chérieeeeee💞",
+    "Mi amor🇮🇹 🥰",
+    "P'tit chatttt😼",
+    "Mon bébééééé🐣",
+    "Ma raison d'être🫠",
+    "Choupichou💝",
+    "Ma femmeeeee💍"
+  ];
+
+  const heartEmojis = ["🩷","❤️","💜","💙","💛","🤍","💗","💓"];
+  const titles = ["Je t'aime","Je t'adore","Je suis tiens","Je te divinise","Je suis dingue de toi","Je suis amoureux"];
+  let heartCount = 0;
+  let msgIndex = 0;
+
+  // === SHARED TAP COUNTER via Firebase ===
+  let pendingTaps = 0;
+  let remoteBase = 0;   // last value received from Firebase
+  let localTotal = 0;   // what we show locally (remoteBase + pendingTaps)
+  let syncTimeout = null;
+  let firebaseReady = false;
+
+  function setOnline(online) {
+    const dot = document.getElementById('syncDot');
+    dot.classList.toggle('offline', !online);
+  }
+
+  function renderTapCount(n) {
+    const el = document.getElementById('tapCount');
+    el.textContent = Number(n).toLocaleString('fr-FR');
+  }
+
+  function bumpTapDisplay() {
+    const el = document.getElementById('tapCount');
+    el.classList.remove('bump');
+    void el.offsetWidth;
+    el.classList.add('bump');
+  }
+
+  function pulseSyncDot() {
+    const dot = document.getElementById('syncDot');
+    dot.classList.remove('syncing');
+    void dot.offsetWidth;
+    dot.classList.add('syncing');
+  }
+
+  function scheduleSync() {
+    clearTimeout(syncTimeout);
+    syncTimeout = setTimeout(flushTaps, 1200);
+  }
+
+  async function flushTaps() {
+    if (!firebaseReady || pendingTaps === 0) return;
+    const toAdd = pendingTaps;
+    pendingTaps = 0;
+    try {
+      await window._fbRunTransaction(toAdd);
+      setOnline(true);
+      pulseSyncDot();
+    } catch (e) {
+      pendingTaps += toAdd;
+      setOnline(false);
+    }
+  }
+
+  // Init Firebase listener once Firebase module is ready
+  function initFirebase() {
+    firebaseReady = true;
+    setOnline(true);
+    // Subscribe to real-time updates from Firebase
+    window._fbOnValue((total) => {
+      remoteBase = total;
+      localTotal = remoteBase + pendingTaps;
+      renderTapCount(localTotal);
+    });
+  }
+
+  document.addEventListener('firebase-ready', initFirebase);
+  // Fallback: if event already fired before listener was added
+  if (window._firebaseReady) initFirebase();
+
+  // === ORIGINAL HEART LOGIC ===
+  function heartClick() {
+    heartCount++;
+    pendingTaps++;
+    localTotal++;
+
+    const h = document.getElementById('bigHeart');
+    h.classList.remove('beat');
+    void h.offsetWidth;
+    h.classList.add('beat');
+    h.textContent = heartEmojis[heartCount % heartEmojis.length];
+
+    if (heartCount % 5 === 0) {
+      document.getElementById('titleText').textContent = titles[Math.floor(Math.random() * titles.length)];
+    }
+
+    // Mise à jour immédiate — sans attendre Firebase
+    renderTapCount(localTotal);
+    bumpTapDisplay();
+    scheduleSync();
+  }
+
+  function updateCounter() {
+    const now = new Date();
+    const diff = now - START;
+    if (diff < 0) return;
+    const totalSecs = Math.floor(diff / 1000);
+    const days  = Math.floor(totalSecs / 86400);
+    const hours = Math.floor((totalSecs % 86400) / 3600);
+    const mins  = Math.floor((totalSecs % 3600) / 60);
+    const secs  = totalSecs % 60;
+    document.getElementById('daysCount').textContent = days;
+    document.getElementById('hoursCount').textContent = String(hours).padStart(2,'0');
+    document.getElementById('minsCount').textContent  = String(mins).padStart(2,'0');
+    document.getElementById('secsCount').textContent  = String(secs).padStart(2,'0');
+  }
+
+  function showMessage() {
+    const box = document.getElementById('msgBox');
+    box.textContent = messages[msgIndex % messages.length];
+    msgIndex++;
+    box.classList.remove('visible');
+    void box.offsetWidth;
+    box.classList.add('visible');
+  }
+
+  function launchConfetti() {
+    const colors = ["#ed93b1","#d4537e","#fac775","#9FE1CB","#AFA9EC","#f5c4b3","#97C459","#85B7EB"];
+    for (let i = 0; i < 70; i++) {
+      setTimeout(() => {
+        const c = document.createElement('div');
+        c.className = 'confetti-piece';
+        c.style.left = (Math.random() * 100) + 'vw';
+        c.style.top = '0';
+        c.style.background = colors[Math.floor(Math.random() * colors.length)];
+        c.style.animationDuration = (1.5 + Math.random() * 2) + 's';
+        c.style.animationDelay = (Math.random() * 0.8) + 's';
+        c.style.borderRadius = Math.random() > 0.5 ? '50%' : '2px';
+        c.style.width = (6 + Math.random() * 8) + 'px';
+        c.style.height = (6 + Math.random() * 8) + 'px';
+        document.body.appendChild(c);
+        setTimeout(() => c.remove(), 4000);
+      }, i * 25);
+    }
+  }
+
+  function setupFloatingHearts() {
+    const bg = document.getElementById('heartsBg');
+    const emojis = ["🩷","❤️","💜","💗","💓","💖","🌸","✨","🌹"];
+    for (let i = 0; i < 14; i++) {
+      const h = document.createElement('div');
+      h.className = 'heart-float';
+      h.textContent = emojis[i % emojis.length];
+      h.style.left = (Math.random() * 92 + 4) + '%';
+      h.style.animationDuration = (6 + Math.random() * 9) + 's';
+      h.style.animationDelay = (Math.random() * 12) + 's';
+      h.style.fontSize = (11 + Math.random() * 16) + 'px';
+      bg.appendChild(h);
+    }
+  }
+
+  updateCounter();
+  setInterval(updateCounter, 1000);
+  setupFloatingHearts();
+</script>
+</body>
+</html>
